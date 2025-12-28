@@ -10,94 +10,21 @@ import {
   Loader2, Grid, List, Settings, Speaker, Vibrate,
   MoreHorizontal, Smartphone, Check
 } from 'lucide-react';
-import HADISLER from './data/Hadis';
+import HADISLER from '../data/Hadis';
+import Cities from '../data/Cities';
+import ESMA_UL_HUSNA from '../data/EsmaUlHusna';
+import SURE_ADLARI from '../data/SureAdları';
+import PRESET_TESBIHAT from '../data/Tesbihat';
 
 // --- DATA: TÜM İLLER (81 İL) ---
-const CITIES = [
-  { name: "Adana", lat: 37.0000, lng: 35.3213 }, { name: "Adıyaman", lat: 37.7648, lng: 38.2786 },
-  { name: "Afyonkarahisar", lat: 38.7507, lng: 30.5567 }, { name: "Ağrı", lat: 39.7191, lng: 43.0503 },
-  { name: "Aksaray", lat: 38.3687, lng: 34.0370 }, { name: "Amasya", lat: 40.6501, lng: 35.8360 },
-  { name: "Ankara", lat: 39.9334, lng: 32.8597 }, { name: "Antalya", lat: 36.8969, lng: 30.7133 },
-  { name: "Ardahan", lat: 41.1105, lng: 42.7022 }, { name: "Artvin", lat: 41.1828, lng: 41.8183 },
-  { name: "Aydın", lat: 37.8560, lng: 27.8416 }, { name: "Balıkesir", lat: 39.6484, lng: 27.8826 },
-  { name: "Bartın", lat: 41.6344, lng: 32.3375 }, { name: "Batman", lat: 37.8812, lng: 41.1291 },
-  { name: "Bayburt", lat: 40.2552, lng: 40.2249 }, { name: "Bilecik", lat: 40.1451, lng: 29.9799 },
-  { name: "Bingöl", lat: 38.8854, lng: 40.4983 }, { name: "Bitlis", lat: 38.4006, lng: 42.1095 },
-  { name: "Bolu", lat: 40.7350, lng: 31.6061 }, { name: "Burdur", lat: 37.7204, lng: 30.2908 },
-  { name: "Bursa", lat: 40.1885, lng: 29.0610 }, { name: "Çanakkale", lat: 40.1553, lng: 26.4142 },
-  { name: "Çankırı", lat: 40.6013, lng: 33.6134 }, { name: "Çorum", lat: 40.5506, lng: 34.9556 },
-  { name: "Denizli", lat: 37.7765, lng: 29.0864 }, { name: "Diyarbakır", lat: 37.9144, lng: 40.2306 },
-  { name: "Düzce", lat: 40.8438, lng: 31.1565 }, { name: "Edirne", lat: 41.6768, lng: 26.5603 },
-  { name: "Elazığ", lat: 38.6810, lng: 39.2264 }, { name: "Erzincan", lat: 39.7500, lng: 39.5000 },
-  { name: "Erzurum", lat: 39.9000, lng: 41.2700 }, { name: "Eskişehir", lat: 39.7767, lng: 30.5206 },
-  { name: "Gaziantep", lat: 37.0662, lng: 37.3833 }, { name: "Giresun", lat: 40.9128, lng: 38.3895 },
-  { name: "Gümüşhane", lat: 40.4600, lng: 39.4700 }, { name: "Hakkari", lat: 37.5833, lng: 43.7333 },
-  { name: "Hatay", lat: 36.4018, lng: 36.3498 }, { name: "Iğdır", lat: 39.9167, lng: 44.0333 },
-  { name: "Isparta", lat: 37.7648, lng: 30.5566 }, { name: "İstanbul", lat: 41.0082, lng: 28.9784 },
-  { name: "İzmir", lat: 38.4192, lng: 27.1287 }, { name: "Kahramanmaraş", lat: 37.5858, lng: 36.9371 },
-  { name: "Karabük", lat: 41.2061, lng: 32.6204 }, { name: "Karaman", lat: 37.1759, lng: 33.2287 },
-  { name: "Kars", lat: 40.6167, lng: 43.1000 }, { name: "Kastamonu", lat: 41.3887, lng: 33.7827 },
-  { name: "Kayseri", lat: 38.7312, lng: 35.4787 }, { name: "Kilis", lat: 36.7184, lng: 37.1212 },
-  { name: "Kırıkkale", lat: 39.8468, lng: 33.5153 }, { name: "Kırklareli", lat: 41.7333, lng: 27.2167 },
-  { name: "Kırşehir", lat: 39.1425, lng: 34.1709 }, { name: "Kocaeli", lat: 40.8533, lng: 29.8815 },
-  { name: "Konya", lat: 37.8667, lng: 32.4833 }, { name: "Kütahya", lat: 39.4167, lng: 29.9833 },
-  { name: "Malatya", lat: 38.3552, lng: 38.3095 }, { name: "Manisa", lat: 38.6191, lng: 27.4289 },
-  { name: "Mardin", lat: 37.3212, lng: 40.7245 }, { name: "Mersin", lat: 36.8000, lng: 34.6333 },
-  { name: "Muğla", lat: 37.2153, lng: 28.3636 }, { name: "Muş", lat: 38.9462, lng: 41.7539 },
-  { name: "Nevşehir", lat: 38.6939, lng: 34.6857 }, { name: "Niğde", lat: 37.9667, lng: 34.6833 },
-  { name: "Ordu", lat: 40.9839, lng: 37.8764 }, { name: "Osmaniye", lat: 37.0742, lng: 36.2472 },
-  { name: "Rize", lat: 41.0201, lng: 40.5234 }, { name: "Sakarya", lat: 40.7569, lng: 30.3783 },
-  { name: "Samsun", lat: 41.2928, lng: 36.3313 }, { name: "Siirt", lat: 37.9333, lng: 41.9500 },
-  { name: "Sinop", lat: 42.0231, lng: 35.1531 }, { name: "Sivas", lat: 39.7477, lng: 37.0179 },
-  { name: "Şanlıurfa", lat: 37.1591, lng: 38.7969 }, { name: "Şırnak", lat: 37.5164, lng: 42.4611 },
-  { name: "Tekirdağ", lat: 40.9833, lng: 27.5167 }, { name: "Tokat", lat: 40.3167, lng: 36.5500 },
-  { name: "Trabzon", lat: 41.0015, lng: 39.7178 }, { name: "Tunceli", lat: 39.1079, lng: 39.5401 },
-  { name: "Uşak", lat: 38.6823, lng: 29.4082 }, { name: "Van", lat: 38.4891, lng: 43.4089 },
-  { name: "Yalova", lat: 40.6500, lng: 29.2667 }, { name: "Yozgat", lat: 39.8181, lng: 34.8147 },
-  { name: "Zonguldak", lat: 41.4564, lng: 31.7987 }
-];
+const CITIES = Cities;
 
 // --- DATA: ESMA-ÜL HÜSNA ---
-const ESMA_UL_HUSNA = [
-  { id: 'e1', arabic: 'الله', name: 'Allah', meaning: 'Eşi ve benzeri olmayan, bütün noksan sıfatlardan münezzeh tek ilah.', target: 66 },
-  { id: 'e2', arabic: 'الرَّحْمَن', name: 'Er-Rahmân', meaning: 'Dünyada bütün mahlûkata merhamet eden.', target: 298 },
-  { id: 'e3', arabic: 'الرَّحِيم', name: 'Er-Rahîm', meaning: 'Ahirette sadece müminlere merhamet eden.', target: 258 },
-  { id: 'e4', arabic: 'الْمَلِك', name: 'El-Melik', meaning: 'Mülkün sahibi.', target: 90 },
-  { id: 'e5', arabic: 'الْقُدُّوس', name: 'El-Kuddûs', meaning: 'Her noksanlıktan uzak.', target: 170 },
-  { id: 'e6', arabic: 'السَّلام', name: 'Es-Selâm', meaning: 'Her türlü tehlikeden selamete çıkaran.', target: 131 },
-  { id: 'e7', arabic: 'الْمُؤْمِن', name: 'El-Mü’min', meaning: 'Güven veren, emin kılan.', target: 137 },
-  { id: 'e8', arabic: 'الْمُهَيْمِن', name: 'El-Müheymin', meaning: 'Her şeyi görüp gözeten.', target: 145 },
-  { id: 'e9', arabic: 'الْعَزِيز', name: 'El-Azîz', meaning: 'İzzet sahibi, her şeye galip olan.', target: 94 },
-  { id: 'e10', arabic: 'الْجَبَّار', name: 'El-Cebbâr', meaning: 'Azamet ve kudret sahibi.', target: 206 },
-  { id: 'e11', arabic: 'الْمُتَكَبِّر', name: 'El-Mütekebbir', meaning: 'Büyüklükte eşi olmayan.', target: 662 },
-  { id: 'e12', arabic: 'الْخَالِق', name: 'El-Hâlık', meaning: 'Yaratan.', target: 731 },
-  // ... diğerleri
-];
 
-const PRESET_TESBIHAT = [
-  { id: 't1', label: "Sübhanallah", target: 33, meaning: "Allah noksan sıfatlardan münezzehtir", arabic: "سُبْحَانَ الله" },
-  { id: 't2', label: "Elhamdülillah", target: 33, meaning: "Hamd Allah'a mahsustur", arabic: "الْحَمْدُ لِلَّهِ" },
-  { id: 't3', label: "Allahu Ekber", target: 33, meaning: "Allah en büyüktür", arabic: "اَللّٰهُ أَكْبَر" },
-  { id: 't4', label: "Lâ ilâhe illallah", target: 100, meaning: "Allah'tan başka ilah yoktur", arabic: "لَا إِلَهَ إِلَّا اللهُ" },
-  { id: 't5', label: "Estağfirullah", target: 100, meaning: "Allah'tan bağışlanma dilerim", arabic: "أَسْتَغْفِرُ اللّٰهَ" },
-  { id: 't6', label: "Salavat-ı Şerife", target: 100, meaning: "Hz. Muhammed'e salat ve selam olsun", arabic: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ" }
-];
 
 const HADITH_LIBRARY = HADISLER;
 
-const SURAH_NAMES_TR = [
-  "Fâtiha", "Bakara", "Âl-i İmrân", "Nisâ", "Mâide", "En'âm", "A'râf", "Enfâl", "Tevbe", "Yûnus",
-  "Hûd", "Yûsuf", "Ra'd", "İbrâhîm", "Hicr", "Nahl", "İsrâ", "Kehf", "Meryem", "Tâhâ", "Enbiyâ", "Hac",
-  "Mü'minûn", "Nûr", "Furkân", "Şu'arâ", "Neml", "Kasas", "Ankebût", "Rûm", "Lokmân", "Secde", "Ahzâb",
-  "Sebe'", "Fâtır", "Yâsîn", "Sâffât", "Sâd", "Zümer", "Mü'min", "Fussilet", "Şûrâ", "Zuhruf", "Duhân",
-  "Câsiye", "Ahkâf", "Muhammed", "Fetih", "Hucurât", "Kâf", "Zâriyât", "Tûr", "Necm", "Kamer", "Rahmân",
-  "Vâkıa", "Hadîd", "Mücâdele", "Haşr", "Mümtehine", "Saf", "Cuma", "Münâfikûn", "Teğâbûn", "Talâk",
-  "Tahrîm", "Mülk", "Kalem", "Hâkka", "Meâric", "Nûh", "Cin", "Müzzemmil", "Müddessir", "Kıyâme", "İnsân",
-  "Mürselât", "Nebe'", "Nâziât", "Abese", "Tekvîr", "İnfitâr", "Mutaffifîn", "İnşikâk", "Burûc", "Târık",
-  "A'lâ", "Gâşiye", "Fecr", "Beled", "Şems", "Leyl", "Duhâ", "İnşirah", "Tîn", "Alak", "Kadir", "Beyyine",
-  "Zilzâl", "Âdiyât", "Kâria", "Tekâsür", "Asr", "Hümeze", "Fîl", "Kureyş", "Mâûn", "Kevser", "Kâfirûn",
-  "Nasr", "Tebbet", "İhlâs", "Felak", "Nâs"
-];
+const SURAH_NAMES_TR = SURE_ADLARI;
 
 const ALARM_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3";
 const CLICK_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3"; 
