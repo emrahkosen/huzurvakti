@@ -10,6 +10,7 @@ import {
   Loader2, Grid, List, Settings, Speaker, Vibrate,
   MoreHorizontal, Smartphone, Check
 } from 'lucide-react';
+import HADISLER from '../data/Hadis';
 
 // --- DATA: TÜM İLLER (81 İL) ---
 const CITIES = [
@@ -82,25 +83,7 @@ const PRESET_TESBIHAT = [
   { id: 't6', label: "Salavat-ı Şerife", target: 100, meaning: "Hz. Muhammed'e salat ve selam olsun", arabic: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ" }
 ];
 
-const HADITH_LIBRARY = [
-  { 
-    id: 'buhari', title: "Sahih-i Buhârî", author: "İmam Buhârî", 
-    color: "bg-blue-100 dark:bg-blue-900/30", textColor: "text-blue-700 dark:text-blue-300",
-    hadiths: [
-       { id: "b1", type: 'hadith', text: "Ameller niyetlere göredir.", topic: "Niyet" },
-       { id: "b2", type: 'hadith', text: "Müslüman, elinden ve dilinden diğer Müslümanların emin olduğu kimsedir.", topic: "Güven" },
-       { id: "b3", type: 'hadith', text: "Kolaylaştırınız, zorlaştırmayınız; müjdeleyiniz, nefret ettirmeyiniz.", topic: "Tebliğ" }
-    ]
-  },
-  { 
-    id: 'muslim', title: "Sahih-i Müslim", author: "İmam Müslim", 
-    color: "bg-emerald-100 dark:bg-emerald-900/30", textColor: "text-emerald-700 dark:text-emerald-300",
-    hadiths: [
-       { id: "m1", type: 'hadith', text: "Temizlik imanın yarısıdır.", topic: "Temizlik" },
-       { id: "m2", type: 'hadith', text: "Kulun Rabbine en yakın olduğu an secde anıdır.", topic: "Namaz" }
-    ]
-  }
-];
+const HADITH_LIBRARY = HADISLER;
 
 const SURAH_NAMES_TR = [
   "Fâtiha", "Bakara", "Âl-i İmrân", "Nisâ", "Mâide", "En'âm", "A'râf", "Enfâl", "Tevbe", "Yûnus",
