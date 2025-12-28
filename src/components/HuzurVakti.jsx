@@ -10,7 +10,7 @@ import {
   Loader2, Grid, List, Settings, Speaker, Vibrate,
   MoreHorizontal, Smartphone, Check
 } from 'lucide-react';
-import HADISLER from '../data/Hadis';
+import HADISLER from './data/Hadis';
 
 // --- DATA: TÜM İLLER (81 İL) ---
 const CITIES = [
@@ -71,7 +71,7 @@ const ESMA_UL_HUSNA = [
   { id: 'e10', arabic: 'الْجَبَّار', name: 'El-Cebbâr', meaning: 'Azamet ve kudret sahibi.', target: 206 },
   { id: 'e11', arabic: 'الْمُتَكَبِّر', name: 'El-Mütekebbir', meaning: 'Büyüklükte eşi olmayan.', target: 662 },
   { id: 'e12', arabic: 'الْخَالِق', name: 'El-Hâlık', meaning: 'Yaratan.', target: 731 },
-  // ... diğerleri (listenin tamamı eklenebilir ama dosya boyutu için örnekler yeterli)
+  // ... diğerleri
 ];
 
 const PRESET_TESBIHAT = [
@@ -389,31 +389,33 @@ export default function HuzurVakti() {
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
       {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-50 flex justify-between items-center px-4 max-w-md mx-auto shadow-sm">
-          <div className="flex items-center gap-2">
-             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md">
-                 <MapPin size={16}/>
-             </div>
-             <div className="flex flex-col leading-tight">
-                 <span className="font-bold text-sm text-slate-900 dark:text-white">Huzur Vakti</span>
-             </div>
-          </div>
-          <div className="flex items-center gap-2">
-             {selectedSurah && activeTab === 'read' && (
-                 <div className="hidden sm:flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
-                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{selectedSurah.name} {activeAyahIndex + 1}</span>
-                     <button onClick={() => setIsPlaying(!isPlaying)} className="bg-emerald-600 text-white p-1 rounded-full hover:bg-emerald-700 transition">
-                        {isPlaying ? <Pause size={12}/> : <Play size={12}/>}
-                     </button>
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-50">
+          <div className="w-full max-w-3xl mx-auto h-full flex justify-between items-center px-4">
+              <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md">
+                     <MapPin size={16}/>
                  </div>
-             )}
-             <button onClick={() => setShowFavModal(true)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"><Heart size={20}/></button>
-             <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
+                 <div className="flex flex-col leading-tight">
+                     <span className="font-bold text-sm text-slate-900 dark:text-white">Huzur Vakti</span>
+                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                 {selectedSurah && activeTab === 'read' && (
+                     <div className="hidden sm:flex items-center gap-2 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                         <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{selectedSurah.name} {activeAyahIndex + 1}</span>
+                         <button onClick={() => setIsPlaying(!isPlaying)} className="bg-emerald-600 text-white p-1 rounded-full hover:bg-emerald-700 transition">
+                            {isPlaying ? <Pause size={12}/> : <Play size={12}/>}
+                         </button>
+                     </div>
+                 )}
+                 <button onClick={() => setShowFavModal(true)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"><Heart size={20}/></button>
+                 <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
+              </div>
           </div>
       </header>
 
       {/* MAIN CONTENT */}
-      <main className="max-w-md mx-auto pt-20 pb-24 px-4 min-h-screen">
+      <main className="w-full max-w-3xl mx-auto pt-20 pb-24 px-4 min-h-screen">
           
           {/* --- HOME TAB --- */}
           {activeTab === 'home' && (
@@ -449,7 +451,7 @@ export default function HuzurVakti() {
                   </div>
                   
                   {prayerTimes && (
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                           {['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key, i) => { 
                               const names = ['İmsak', 'Güneş', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
                               const isNext = nextPrayer?.n === names[i]; 
@@ -872,23 +874,25 @@ export default function HuzurVakti() {
       )}
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center z-50 max-w-md mx-auto pb-2">
-          {[
-              { id: 'home', icon: Home, label: 'Ana Sayfa' },
-              { id: 'quran', icon: BookOpen, label: 'Kuran' },
-              { id: 'hadith', icon: Book, label: 'Hadis' },
-              { id: 'tesbih', icon: RotateCw, label: 'Tesbihat' },
-              { id: 'qibla', icon: Compass, label: 'Kıble' },
-          ].map(item => (
-              <button 
-                key={item.id} 
-                onClick={() => setActiveTab(item.id)} 
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${activeTab === item.id ? 'text-emerald-600 dark:text-emerald-400 -translate-y-2' : 'text-slate-400 dark:text-slate-500'}`}
-              >
-                  <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                  <span className={`text-[10px] font-bold ${activeTab === item.id ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>{item.label}</span>
-              </button>
-          ))}
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center z-50">
+          <div className="w-full max-w-3xl mx-auto h-full flex justify-around items-center pb-2">
+              {[
+                  { id: 'home', icon: Home, label: 'Ana Sayfa' },
+                  { id: 'quran', icon: BookOpen, label: 'Kuran' },
+                  { id: 'hadith', icon: Book, label: 'Hadis' },
+                  { id: 'tesbih', icon: RotateCw, label: 'Tesbihat' },
+                  { id: 'qibla', icon: Compass, label: 'Kıble' },
+              ].map(item => (
+                  <button 
+                    key={item.id} 
+                    onClick={() => setActiveTab(item.id)} 
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${activeTab === item.id ? 'text-emerald-600 dark:text-emerald-400 -translate-y-2' : 'text-slate-400 dark:text-slate-500'}`}
+                  >
+                      <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+                      <span className={`text-[10px] font-bold ${activeTab === item.id ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>{item.label}</span>
+                  </button>
+              ))}
+          </div>
       </nav>
     </div>
   );
