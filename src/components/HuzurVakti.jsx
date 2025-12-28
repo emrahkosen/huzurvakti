@@ -96,6 +96,8 @@ export default function HuzurVakti() {
     if (savedTheme === 'dark') setDarkMode(true);
     const savedFavs = localStorage.getItem('favorites');
     if (savedFavs) setFavorites(JSON.parse(savedFavs));
+    const savedAlarms = localStorage.getItem('alarms');
+    if (savedAlarms) setAlarms(JSON.parse(savedAlarms));
     
     // City & Prayer
     const savedCity = localStorage.getItem('selectedCity');
@@ -189,12 +191,40 @@ export default function HuzurVakti() {
     }
   }, [fetchPrayerTimes]);
 
+  // Alarm Check Logic
+  const triggerAlarm = useCallback((prayerName) => {
+      setIsAlarmPlaying(true);
+      if (alarmAudioRef.current) { alarmAudioRef.current.currentTime = 0; alarmAudioRef.current.play().catch(e => console.log(e)); }
+      const trNames = { Fajr: 'İmsak', Sunrise: 'Güneş', Dhuhr: 'Öğle', Asr: 'İkindi', Maghrib: 'Akşam', Isha: 'Yatsı' };
+      showNotification(`${trNames[prayerName]} Vakti Geldi!`);
+      if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+  }, []);
+
+  const checkAlarm = useCallback((times) => {
+      const now = new Date();
+      const currentTimeStr = `${now.getHours()}:${now.getMinutes() < 10 ? '0'+now.getMinutes() : now.getMinutes()}`;
+      if (currentTimeStr === lastAlarmTime) return;
+      const timeKeys = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+      for (const key of timeKeys) {
+          const prayerTime = times[key].split(' ')[0];
+          if (prayerTime === currentTimeStr && alarms[key]) {
+              triggerAlarm(key); setLastAlarmTime(currentTimeStr); break;
+          }
+      }
+  }, [alarms, lastAlarmTime, triggerAlarm]);
+
+  const toggleAlarmSetting = (key) => {
+      const newAlarms = { ...alarms, [key]: !alarms[key] };
+      setAlarms(newAlarms); localStorage.setItem('alarms', JSON.stringify(newAlarms));
+      showNotification(newAlarms[key] ? "Alarm Açıldı" : "Alarm Kapandı");
+  };
+
   useEffect(() => {
     if(prayerTimes) {
-        const t = setInterval(() => { calculateNextPrayer(prayerTimes); }, 1000);
+        const t = setInterval(() => { calculateNextPrayer(prayerTimes); checkAlarm(prayerTimes); }, 1000);
         return () => clearInterval(t);
     }
-  }, [prayerTimes, calculateNextPrayer]);
+  }, [prayerTimes, calculateNextPrayer, checkAlarm]);
 
   // --- QURAN FUNCTIONS ---
   const prepareSurahList = async () => {
@@ -238,6 +268,11 @@ export default function HuzurVakti() {
   const isFavorite = (item) => {
       const itemId = item.type === 'hadith' ? item.id : `ayah-${selectedSurah?.number}-${item.number}`;
       return favorites.some(f => f.uniqueId === itemId);
+  };
+
+  const stopAlarm = () => {
+      setIsAlarmPlaying(false);
+      if (alarmAudioRef.current) { alarmAudioRef.current.pause(); alarmAudioRef.current.currentTime = 0; }
   };
 
   // --- TESBIHAT FUNCTIONS ---
@@ -473,10 +508,17 @@ export default function HuzurVakti() {
                           {['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((key, i) => { 
                               const names = ['İmsak', 'Güneş', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
                               const isNext = nextPrayer?.n === names[i]; 
+                              const isAlarmOn = alarms[key];
                               return (
-                                  <div key={key} className={`bg-white dark:bg-slate-900 border rounded-xl p-3 flex flex-col items-center justify-center shadow-sm transition-all ${isNext ? 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
+                                  <div key={key} className={`relative bg-white dark:bg-slate-900 border rounded-xl p-3 flex flex-col items-center justify-center shadow-sm transition-all ${isNext ? 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
                                       <p className="text-xs font-bold text-slate-500 uppercase">{names[i]}</p>
                                       <p className="font-bold text-lg my-1">{prayerTimes[key].split(' ')[0]}</p>
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); toggleAlarmSetting(key); }}
+                                        className={`mt-1 p-1.5 rounded-full transition-colors ${isAlarmOn ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                      >
+                                          {isAlarmOn ? <Bell size={16} /> : <BellOff size={16} />}
+                                      </button>
                                   </div>
                               )
                           })}
@@ -832,6 +874,22 @@ export default function HuzurVakti() {
                           <div key={c.name} onClick={()=>{setSelectedCity(c); fetchPrayerTimes(c.lat, c.lng); setShowCityModal(false);}} className="p-3 border-b dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition">{c.name}</div>
                       ))}
                   </div>
+              </div>
+          </div>
+      )}
+
+      {/* Alarm Modal */}
+      {isAlarmPlaying && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                      <Volume2 size={40} className="text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2 dark:text-white">Vakit Geldi!</h2>
+                  <p className="text-slate-500 mb-8">Namaz vakti girdi, Allah kabul etsin.</p>
+                  <button onClick={stopAlarm} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-500/30">
+                      Alarmı Durdur
+                  </button>
               </div>
           </div>
       )}
