@@ -8,19 +8,19 @@ import {
   RotateCcw, ScrollText, Share2,
   Bell, BellOff, Volume2, Edit, Plus, Save, MapPin,
   Loader2, Grid, List, Settings, Speaker, Vibrate,
-  MoreHorizontal, Smartphone, Check
+  MoreHorizontal, Smartphone, Check, Navigation
 } from 'lucide-react';
 import HADISLER from '../data/Hadis';
-import CITIES from '../data/Cities';
-import ESMA_UL_HUSNA from '../data/EsmaUlHusna';
 import SURE_ADLARI from '../data/SureAdları';
 import PRESET_TESBIHAT from '../data/Tesbihat';
+import ESMA_UL_HUSNA from '../data/EsmaUlHusna';
+import CITIES from '../data/Cities';
 
 
 
-// --- DATA: ESMA-ÜL HÜSNA ---
 
 
+const HADITH_LIBRARY = HADISLER;
 
 const SURAH_NAMES_TR = SURE_ADLARI;
 
@@ -120,7 +120,7 @@ export default function HuzurVakti() {
     prepareSurahList();
 
     // Daily Hadith
-    const allHadiths = HADISLER.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
+    const allHadiths = HADITH_LIBRARY.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
     const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
     setDailyHadith(allHadiths[dayOfYear % allHadiths.length]);
 
@@ -287,24 +287,116 @@ export default function HuzurVakti() {
       return circ - (percent / 100) * circ;
   };
 
+  // --- COMPASS LOGIC ---
+  const handleOrientation = useCallback((e) => {
+      let heading = e.webkitCompassHeading || Math.abs(e.alpha - 360);
+      setDeviceHeading(heading);
+  }, []);
+
+  const requestCompassPermission = () => {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+              .then(response => {
+                  if (response === 'granted') {
+                      window.addEventListener('deviceorientation', handleOrientation);
+                      setManualCompass(false);
+                  } else {
+                      showNotification("İzin verilmedi");
+                  }
+              })
+              .catch(console.error);
+      } else {
+          showNotification("Cihaz desteklemiyor veya izin gerekmiyor");
+      }
+  };
+
+  useEffect(() => {
+      if (activeTab === 'qibla') {
+          // iOS 13+ kontrolü
+          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+              setManualCompass(true); 
+          } else {
+              if('ondeviceorientationabsolute' in window) {
+                  window.addEventListener('deviceorientationabsolute', handleOrientation);
+              } else {
+                  window.addEventListener('deviceorientation', handleOrientation);
+              }
+          }
+      }
+      return () => {
+          window.removeEventListener('deviceorientation', handleOrientation);
+          window.removeEventListener('deviceorientationabsolute', handleOrientation);
+      };
+  }, [activeTab, handleOrientation]);
+
   // --- RENDER HELPERS ---
   
   const renderCompass = () => {
       return (
-          <div className="h-[calc(100vh-8rem)] flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="h-[calc(100vh-8rem)] flex flex-col items-center justify-center animate-in fade-in duration-300 relative">
+               {manualCompass && (
+                   <button 
+                       onClick={requestCompassPermission} 
+                       className="absolute top-10 z-10 bg-emerald-600 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-emerald-700 transition"
+                   >
+                       <Compass size={20} /> Pusulayı Başlat
+                   </button>
+               )}
+               
+               {/* Main Compass Circle */}
                <div 
-                    className="w-64 h-64 rounded-full border-4 border-slate-200 dark:border-slate-800 relative bg-white dark:bg-slate-900 shadow-2xl flex items-center justify-center transition-transform duration-200"
+                    className="w-72 h-72 rounded-full border-4 border-slate-200 dark:border-slate-800 relative bg-white dark:bg-slate-900 shadow-2xl flex items-center justify-center transition-transform duration-200 ease-out"
                     style={{ transform: `rotate(${-deviceHeading}deg)` }}
                 >
-                   <div className="absolute top-2 font-bold text-red-500 text-lg">K</div>
-                   <div className="absolute inset-0 flex justify-center transition-transform duration-500" style={{ transform: `rotate(${qiblaAngle}deg)` }}>
-                        <div className="w-1.5 h-24 bg-emerald-500 rounded-full mt-5 shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+                   {/* Cardinal Points */}
+                   <div className="absolute top-2 font-bold text-red-500 text-xl tracking-widest">K</div>
+                   <div className="absolute bottom-2 font-bold text-slate-400 text-sm">G</div>
+                   <div className="absolute right-3 font-bold text-slate-400 text-sm">D</div>
+                   <div className="absolute left-3 font-bold text-slate-400 text-sm">B</div>
+
+                   {/* Degree Marks */}
+                   {[...Array(12)].map((_, i) => (
+                       <div 
+                           key={i} 
+                           className="absolute w-full h-full flex justify-center p-1"
+                           style={{ transform: `rotate(${i * 30}deg)` }}
+                       >
+                           <div className="w-0.5 h-3 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                       </div>
+                   ))}
+
+                   {/* Qibla Indicator (Fixed to geographical coords) */}
+                   <div 
+                       className="absolute inset-0 flex justify-center items-start pt-6 transition-all duration-500 ease-out" 
+                       style={{ transform: `rotate(${qiblaAngle}deg)` }}
+                   >
+                        <div className="flex flex-col items-center gap-1">
+                            {/* Kaaba Icon / Indicator */}
+                            <div className="w-8 h-8 bg-black rounded-md border-2 border-amber-400 shadow-lg flex items-center justify-center relative">
+                                <div className="w-full h-[1px] bg-amber-400 absolute top-2"></div>
+                            </div>
+                            <div className="w-1.5 h-20 bg-gradient-to-b from-emerald-500 to-transparent rounded-full opacity-50"></div>
+                        </div>
                    </div>
-                   <div className="absolute inset-0 rounded-full border border-slate-100 dark:border-slate-800 m-8"></div>
+
+                   {/* Center Dot */}
+                   <div className="absolute w-3 h-3 bg-slate-800 dark:bg-slate-200 rounded-full z-10 border-2 border-white dark:border-slate-800"></div>
                </div>
-               <div className="text-center mt-10">
-                   <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{Math.round(qiblaAngle)}°</p>
-                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Kıble Açısı</p>
+
+               {/* Info Panel */}
+               <div className="text-center mt-10 space-y-2">
+                   <div className="flex items-baseline justify-center gap-2">
+                       <p className="text-6xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                           {Math.round(qiblaAngle)}°
+                       </p>
+                   </div>
+                   <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Kıble Açısı</p>
+                   
+                   {!manualCompass && (
+                       <p className="text-[10px] text-slate-400 max-w-[200px] mx-auto pt-4 flex items-center justify-center gap-1">
+                           <RotateCw size={10} /> Doğru sonuç için telefonunuzla 8 çizin
+                       </p>
+                   )}
                </div>
            </div>
       );
@@ -677,7 +769,7 @@ export default function HuzurVakti() {
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   {!selectedBook ? (
                       <div className="grid grid-cols-2 gap-3">
-                          {HADISLER.map(book => (
+                          {HADITH_LIBRARY.map(book => (
                               <div 
                                 key={book.id} 
                                 onClick={() => setSelectedBook(book)} 
