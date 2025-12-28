@@ -333,11 +333,12 @@ export default function HuzurVakti() {
   
   const renderCompass = () => {
       return (
-          <div className="h-[calc(100vh-8rem)] flex flex-col items-center justify-center animate-in fade-in duration-300 relative">
+          // DÜZELTME: Sabit hesaplama yerine (h-[calc...]), esnek yapı ve taşma kontrolü
+          <div className="w-full h-[calc(100vh-11rem)] flex flex-col items-center justify-center relative overflow-hidden">
                {manualCompass && (
                    <button 
                        onClick={requestCompassPermission} 
-                       className="absolute top-10 z-10 bg-emerald-600 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-emerald-700 transition"
+                       className="absolute top-4 z-10 bg-emerald-600 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 hover:bg-emerald-700 transition"
                    >
                        <Compass size={20} /> Pusulayı Başlat
                    </button>
@@ -345,7 +346,7 @@ export default function HuzurVakti() {
                
                {/* Main Compass Circle */}
                <div 
-                    className="w-72 h-72 rounded-full border-4 border-slate-200 dark:border-slate-800 relative bg-white dark:bg-slate-900 shadow-2xl flex items-center justify-center transition-transform duration-200 ease-out"
+                    className="w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-slate-200 dark:border-slate-800 relative bg-white dark:bg-slate-900 shadow-2xl flex items-center justify-center transition-transform duration-200 ease-out"
                     style={{ transform: `rotate(${-deviceHeading}deg)` }}
                 >
                    {/* Cardinal Points */}
@@ -384,9 +385,9 @@ export default function HuzurVakti() {
                </div>
 
                {/* Info Panel */}
-               <div className="text-center mt-10 space-y-2">
+               <div className="text-center mt-8 space-y-2">
                    <div className="flex items-baseline justify-center gap-2">
-                       <p className="text-6xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                       <p className="text-5xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                            {Math.round(qiblaAngle)}°
                        </p>
                    </div>
