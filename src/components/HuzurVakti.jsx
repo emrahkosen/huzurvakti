@@ -11,18 +11,16 @@ import {
   MoreHorizontal, Smartphone, Check
 } from 'lucide-react';
 import HADISLER from '../data/Hadis';
-import Cities from '../data/Cities';
+import CITIES from '../data/Cities';
 import ESMA_UL_HUSNA from '../data/EsmaUlHusna';
 import SURE_ADLARI from '../data/SureAdları';
 import PRESET_TESBIHAT from '../data/Tesbihat';
 
-// --- DATA: TÜM İLLER (81 İL) ---
-const CITIES = Cities;
+
 
 // --- DATA: ESMA-ÜL HÜSNA ---
 
 
-const HADITH_LIBRARY = HADISLER;
 
 const SURAH_NAMES_TR = SURE_ADLARI;
 
@@ -122,7 +120,7 @@ export default function HuzurVakti() {
     prepareSurahList();
 
     // Daily Hadith
-    const allHadiths = HADITH_LIBRARY.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
+    const allHadiths = HADISLER.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
     const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
     setDailyHadith(allHadiths[dayOfYear % allHadiths.length]);
 
@@ -679,7 +677,7 @@ export default function HuzurVakti() {
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   {!selectedBook ? (
                       <div className="grid grid-cols-2 gap-3">
-                          {HADITH_LIBRARY.map(book => (
+                          {HADISLER.map(book => (
                               <div 
                                 key={book.id} 
                                 onClick={() => setSelectedBook(book)} 

@@ -1,4 +1,4 @@
-const Cities = [
+const CITIES = [
   { name: "Adana", lat: 37.0000, lng: 35.3213 }, { name: "Adıyaman", lat: 37.7648, lng: 38.2786 },
   { name: "Afyonkarahisar", lat: 38.7507, lng: 30.5567 }, { name: "Ağrı", lat: 39.7191, lng: 43.0503 },
   { name: "Aksaray", lat: 38.3687, lng: 34.0370 }, { name: "Amasya", lat: 40.6501, lng: 35.8360 },
@@ -42,4 +42,4 @@ const Cities = [
   { name: "Zonguldak", lat: 41.4564, lng: 31.7987 }
 ];
 
-export default Cities;
+export default CITIES;
