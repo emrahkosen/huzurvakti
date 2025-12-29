@@ -1110,7 +1110,7 @@ export default function HuzurVakti() {
                     className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 ${activeTab === item.id ? 'text-emerald-600 dark:text-emerald-400 -translate-y-2' : 'text-slate-400 dark:text-slate-500'}`}
                   >
                       <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                      <span className={`text-[10px] font-bold ${activeTab === item.id ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>{item.label}</span>
+                      <span className="text-[10px] font-bold">{item.label}</span>
                   </button>
               ))}
           </div>
