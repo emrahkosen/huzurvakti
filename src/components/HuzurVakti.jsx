@@ -8,7 +8,8 @@ import {
   RotateCcw, ScrollText, Share2,
   Bell, BellOff, Volume2, Edit, Plus, Save, MapPin,
   Loader2, Grid, List, Settings, Speaker, Vibrate,
-  MoreHorizontal, Smartphone, Check, Navigation
+  MoreHorizontal, Smartphone, Check, Navigation,
+  Sparkles, Hand
 } from 'lucide-react';
 import HADISLER from '../data/Hadis';
 import SURE_ADLARI from '../data/SureAdları';
@@ -69,6 +70,13 @@ export default function HuzurVakti() {
   // Hadith
   const [selectedBook, setSelectedBook] = useState(null);
   const [dailyHadith, setDailyHadith] = useState(null);
+  const [sliderHadiths, setSliderHadiths] = useState([]);
+  
+  // Tinder Swipe State
+  const [cardStackIndex, setCardStackIndex] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const dragStartX = useRef(0);
+  const isDragging = useRef(false);
 
   // Compass
   const [qiblaAngle, setQiblaAngle] = useState(0);
@@ -89,6 +97,14 @@ export default function HuzurVakti() {
       const x = Math.cos(lat*Math.PI/180)*Math.sin(mLat*Math.PI/180) - Math.sin(lat*Math.PI/180)*Math.cos(mLat*Math.PI/180)*Math.cos((mLng-lng)*Math.PI/180);
       return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   };
+
+  const shuffleHadiths = useCallback(() => {
+      const all = HADITH_LIBRARY.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
+      const shuffled = [...all].sort(() => 0.5 - Math.random());
+      setSliderHadiths(shuffled.slice(0, 10)); // Sayıyı arttırdık
+      setCardStackIndex(0);
+      setDragX(0);
+  }, []);
 
   useEffect(() => {
     // Load Defaults
@@ -126,7 +142,10 @@ export default function HuzurVakti() {
     const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
     setDailyHadith(allHadiths[dayOfYear % allHadiths.length]);
 
-  }, []);
+    // Initial Shuffle for Slider
+    shuffleHadiths();
+
+  }, [shuffleHadiths]);
 
   useEffect(() => {
     document.documentElement.className = darkMode ? 'dark' : 'light';
@@ -320,6 +339,36 @@ export default function HuzurVakti() {
   const getCircleOffset = (r, percent) => {
       const circ = 2 * Math.PI * r;
       return circ - (percent / 100) * circ;
+  };
+
+  // --- SWIPE LOGIC (Tinder Style) ---
+  const onTouchStart = (e) => {
+      isDragging.current = true;
+      dragStartX.current = e.touches[0].clientX || e.clientX; // Mouse support
+  };
+
+  const onMouseDown = (e) => {
+      isDragging.current = true;
+      dragStartX.current = e.clientX;
+  };
+
+  const onTouchMove = (e) => {
+      if (!isDragging.current) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const diff = clientX - dragStartX.current;
+      setDragX(diff);
+  };
+
+  const onTouchEnd = () => {
+      isDragging.current = false;
+      if (Math.abs(dragX) > 100) {
+          // Swipe Action
+          setCardStackIndex(prev => prev + 1);
+          setDragX(0);
+      } else {
+          // Reset Position
+          setDragX(0);
+      }
   };
 
   // --- COMPASS LOGIC ---
@@ -810,23 +859,119 @@ export default function HuzurVakti() {
           {/* --- HADITH TAB --- */}
           {activeTab === 'hadith' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                  
+                  {/* Featured Random Tinder Swipe Stack */}
+                  <div className="mb-8 relative h-[320px] w-full flex justify-center items-center">
+                      <div className="absolute top-0 left-0 w-full flex items-center gap-2 px-1 z-0">
+                          <Sparkles size={16} className="text-purple-500" />
+                          <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wide">Tevafuk Hadisler</h3>
+                      </div>
+
+                      <div 
+                        className="relative w-full h-[280px] mt-8 flex items-center justify-center touch-none"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                        onMouseDown={onMouseDown}
+                        onMouseMove={(e) => {
+                            if (!isDragging.current) return;
+                            const diff = e.clientX - dragStartX.current;
+                            setDragX(diff);
+                        }}
+                        onMouseUp={onTouchEnd}
+                        onMouseLeave={onTouchEnd}
+                      >
+                          {/* "Refresh" Card at the bottom */}
+                          <div className="absolute w-[90%] h-full bg-slate-100 dark:bg-slate-800 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 z-0">
+                              <p className="text-slate-400 font-bold mb-4">Kartlar Bitti</p>
+                              <button onClick={shuffleHadiths} className="px-6 py-3 bg-emerald-600 text-white rounded-full font-bold shadow-lg hover:bg-emerald-700 transition flex items-center gap-2">
+                                  <RotateCw size={18}/> Yeniden Karıştır
+                              </button>
+                          </div>
+
+                          {/* Hadith Cards */}
+                          {sliderHadiths.map((h, index) => {
+                              // Only render current and next few cards
+                              if (index < cardStackIndex) return null;
+                              
+                              const isTop = index === cardStackIndex;
+                              const isNext = index === cardStackIndex + 1;
+                              const isThird = index === cardStackIndex + 2;
+                              
+                              if (!isTop && !isNext && !isThird) return null;
+
+                              let style = {};
+                              
+                              if (isTop) {
+                                  style = {
+                                      transform: `translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
+                                      zIndex: 50,
+                                      transition: isDragging.current ? 'none' : 'all 0.3s ease-out'
+                                  };
+                              } else if (isNext) {
+                                  style = {
+                                      transform: `scale(${0.95 + (Math.abs(dragX) / 5000)}) translateY(10px)`,
+                                      zIndex: 40,
+                                      opacity: 1,
+                                      transition: 'all 0.3s ease-out'
+                                  };
+                              } else if (isThird) {
+                                  style = {
+                                      transform: 'scale(0.90) translateY(20px)',
+                                      zIndex: 30,
+                                      opacity: 0.5,
+                                      transition: 'all 0.3s ease-out'
+                                  };
+                              }
+
+                              return (
+                                  <div 
+                                    key={index}
+                                    style={style}
+                                    className="absolute w-[90%] h-full bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between select-none cursor-grab active:cursor-grabbing"
+                                  >
+                                      {/* Decoration */}
+                                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl pointer-events-none"></div>
+                                      
+                                      <div>
+                                          <div className="flex items-center gap-2 mb-4">
+                                              <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">{h.topic}</span>
+                                          </div>
+                                          <p className="text-xl font-serif italic leading-relaxed drop-shadow-md">"{h.text}"</p>
+                                      </div>
+                                      
+                                      <div className="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
+                                          <span className="text-xs font-bold opacity-90">{h.source}</span>
+                                          <div className="flex gap-2">
+                                               <Hand size={16} className="opacity-50 animate-pulse"/>
+                                          </div>
+                                      </div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  </div>
+
                   {!selectedBook ? (
-                      <div className="grid grid-cols-2 gap-3">
-                          {HADITH_LIBRARY.map(book => (
-                              <div 
-                                key={book.id} 
-                                onClick={() => setSelectedBook(book)} 
-                                className={`rounded-2xl p-4 cursor-pointer h-40 flex flex-col justify-between shadow-sm hover:shadow-md transition active:scale-95 ${book.color} ${book.textColor}`}
-                              >
-                                  <div className="bg-white/40 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                                      <Book size={20}/>
+                      <div>
+                          <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wide mb-3 px-1">Kütüphane</h3>
+                          <div className="grid grid-cols-2 gap-3 pb-4">
+                              {HADITH_LIBRARY.map(book => (
+                                  <div 
+                                    key={book.id} 
+                                    onClick={() => setSelectedBook(book)} 
+                                    className={`rounded-2xl p-4 cursor-pointer h-40 flex flex-col justify-between shadow-sm hover:shadow-md transition active:scale-95 ${book.color} ${book.textColor}`}
+                                  >
+                                      <div className="bg-white/40 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                          <Book size={20}/>
+                                      </div>
+                                      <div>
+                                          <h3 className="font-bold text-lg leading-tight mb-1">{book.title}</h3>
+                                          <p className="text-xs opacity-80">{book.author}</p>
+                                      </div>
                                   </div>
-                                  <div>
-                                      <h3 className="font-bold text-lg leading-tight mb-1">{book.title}</h3>
-                                      <p className="text-xs opacity-80">{book.author}</p>
-                                  </div>
-                              </div>
-                          ))}
+                              ))}
+                          </div>
                       </div>
                   ) : (
                       <div>
