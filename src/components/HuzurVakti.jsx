@@ -9,7 +9,7 @@ import {
   Bell, BellOff, Volume2, Edit, Plus, Save, MapPin,
   Loader2, Grid, List, Settings, Speaker, Vibrate,
   MoreHorizontal, Smartphone, Check, Navigation,
-  Sparkles, Hand
+  Sparkles, Hand, SkipBack, SkipForward, RefreshCw
 } from 'lucide-react';
 import HADISLER from '../data/Hadis';
 import SURE_ADLARI from '../data/SureAdları';
@@ -66,17 +66,22 @@ export default function HuzurVakti() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const ayahScrollRef = useRef(null);
 
   // Hadith
   const [selectedBook, setSelectedBook] = useState(null);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [sliderHadiths, setSliderHadiths] = useState([]);
+  const [activeHadithIndex, setActiveHadithIndex] = useState(0);
+  const hadithScrollRef = useRef(null);
   
-  // Tinder Swipe State
-  const [cardStackIndex, setCardStackIndex] = useState(0);
-  const [dragX, setDragX] = useState(0);
-  const dragStartX = useRef(0);
-  const isDragging = useRef(false);
+  // Quran Swipe State
+  const quranDragStartX = useRef(0);
+  const isQuranDragging = useRef(false);
+
+  // Hadith Swipe State
+  const hadithDragStartX = useRef(0);
+  const isHadithDragging = useRef(false);
 
   // Compass
   const [qiblaAngle, setQiblaAngle] = useState(0);
@@ -101,9 +106,8 @@ export default function HuzurVakti() {
   const shuffleHadiths = useCallback(() => {
       const all = HADITH_LIBRARY.flatMap(book => book.hadiths.map(h => ({...h, source: book.title})));
       const shuffled = [...all].sort(() => 0.5 - Math.random());
-      setSliderHadiths(shuffled.slice(0, 10)); // Sayıyı arttırdık
-      setCardStackIndex(0);
-      setDragX(0);
+      setSliderHadiths(shuffled.slice(0, 10));
+      setActiveHadithIndex(0);
   }, []);
 
   useEffect(() => {
@@ -157,10 +161,17 @@ export default function HuzurVakti() {
         if (isPlaying) { audioRef.current.play().catch(e => { console.log(e); setIsPlaying(false); }); } 
         else { audioRef.current.pause(); }
     }
-    if (isPlaying && activeAyahRef.current) {
-        activeAyahRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
   }, [isPlaying, activeAyahIndex]);
+
+  // Scroll active ayah button into view
+  useEffect(() => {
+      if (activeTab === 'read' && ayahScrollRef.current) {
+          const activeButton = ayahScrollRef.current.querySelector(`[data-ayah="${activeAyahIndex}"]`);
+          if (activeButton) {
+              activeButton.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+          }
+      }
+  }, [activeAyahIndex, activeTab]);
 
   // Prayer Logic
   const calculateNextPrayer = useCallback((timings) => {
@@ -341,33 +352,49 @@ export default function HuzurVakti() {
       return circ - (percent / 100) * circ;
   };
 
-  // --- SWIPE LOGIC (Tinder Style) ---
-  const onTouchStart = (e) => {
-      isDragging.current = true;
-      dragStartX.current = e.touches[0].clientX || e.clientX; // Mouse support
+  // --- QURAN SWIPE LOGIC ---
+  const onQuranTouchStart = (e) => {
+      isQuranDragging.current = true;
+      quranDragStartX.current = e.touches[0].clientX || e.clientX;
   };
 
-  const onMouseDown = (e) => {
-      isDragging.current = true;
-      dragStartX.current = e.clientX;
+  const onQuranTouchEnd = (e) => {
+      if (!isQuranDragging.current) return;
+      isQuranDragging.current = false;
+      const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      const diff = clientX - quranDragStartX.current;
+
+      if (Math.abs(diff) > 50) { // Threshold
+          if (diff > 0) {
+              // Right swipe -> Previous
+              if (activeAyahIndex > 0) setActiveAyahIndex(p => p - 1);
+          } else {
+              // Left swipe -> Next
+              if (activeAyahIndex < quranData.length - 1) setActiveAyahIndex(p => p + 1);
+          }
+      }
   };
 
-  const onTouchMove = (e) => {
-      if (!isDragging.current) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const diff = clientX - dragStartX.current;
-      setDragX(diff);
+  // --- HADITH SWIPE LOGIC ---
+  const onHadithTouchStart = (e) => {
+      isHadithDragging.current = true;
+      hadithDragStartX.current = e.touches[0].clientX || e.clientX;
   };
 
-  const onTouchEnd = () => {
-      isDragging.current = false;
-      if (Math.abs(dragX) > 100) {
-          // Swipe Action
-          setCardStackIndex(prev => prev + 1);
-          setDragX(0);
-      } else {
-          // Reset Position
-          setDragX(0);
+  const onHadithTouchEnd = (e) => {
+      if (!isHadithDragging.current) return;
+      isHadithDragging.current = false;
+      const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      const diff = clientX - hadithDragStartX.current;
+
+      if (Math.abs(diff) > 50) { // Threshold
+          if (diff > 0) {
+              // Right swipe -> Previous
+              if (activeHadithIndex > 0) setActiveHadithIndex(p => p - 1);
+          } else {
+              // Left swipe -> Next
+              if (activeHadithIndex < sliderHadiths.length - 1) setActiveHadithIndex(p => p + 1);
+          }
       }
   };
 
@@ -417,7 +444,6 @@ export default function HuzurVakti() {
   
   const renderCompass = () => {
       return (
-          // DÜZELTME: Sabit hesaplama yerine (h-[calc...]), esnek yapı ve taşma kontrolü
           <div className="w-full h-[calc(100vh-11rem)] flex flex-col items-center justify-center relative overflow-hidden">
                {manualCompass && (
                    <button 
@@ -811,47 +837,73 @@ export default function HuzurVakti() {
 
           {/* --- READ MODE --- */}
           {activeTab === 'read' && selectedSurah && (
-              <div className="animate-in fade-in duration-300">
-                   <div className="flex justify-between items-center mb-4 sticky top-16 bg-slate-50 dark:bg-slate-950 py-2 z-10">
+              <div className="animate-in fade-in duration-300 h-full flex flex-col">
+                   <div className="flex justify-between items-center mb-4 sticky top-16 bg-slate-50 dark:bg-slate-950 py-2 z-10 shrink-0">
                         <button onClick={() => {setActiveTab('quran'); setIsPlaying(false)}} className="flex items-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 px-3 py-1.5 rounded-lg transition">
                             <ArrowLeft size={18} className="mr-1"/> Geri
                         </button>
                         <h2 className="text-lg font-bold">{selectedSurah.name}</h2>
                         <div className="w-16"></div>
                    </div>
-                   <div className="space-y-4 pb-4">
-                        {quranData.map((ayah, idx) => (
-                            <div 
-                                key={idx} 
-                                ref={idx === activeAyahIndex ? activeAyahRef : null} 
-                                className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-sm transition-all duration-300 ${idx === activeAyahIndex ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-800'}`}
-                            >
-                                <div className="flex justify-between items-start mb-4 gap-4">
-                                    <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs font-bold text-slate-500">{ayah.number}</span>
-                                    <p className="text-2xl sm:text-3xl text-right w-full font-serif leading-loose" dir="rtl" style={{fontFamily: "'Amiri', serif"}}>{ayah.textAr}</p>
-                                </div>
-                                <p className="text-sm text-slate-500 italic mb-2">"{ayah.textLat}"</p>
-                                <p className="text-base text-slate-800 dark:text-slate-200 leading-relaxed">{ayah.textTr}</p>
-                                <div className="flex justify-end items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                                    <button onClick={() => toggleFavorite(ayah)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                                        <Heart size={18} fill={isFavorite(ayah) ? '#ef4444' : 'none'} className={isFavorite(ayah) ? 'text-red-500' : 'text-slate-400'}/>
+
+                   {/* Main Content Area: Fixed Height Card */}
+                   <div className="flex-1 flex flex-col items-center justify-center mb-4">
+                        <div 
+                            className="w-full h-[60vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl flex flex-col relative overflow-hidden"
+                            onTouchStart={onQuranTouchStart}
+                            onTouchEnd={onQuranTouchEnd}
+                        >
+                            {/* Top Info Bar */}
+                            <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm shrink-0">
+                                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                                    Ayet {quranData[activeAyahIndex].number}
+                                </span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => toggleFavorite(quranData[activeAyahIndex])} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition">
+                                        <Heart size={18} fill={isFavorite(quranData[activeAyahIndex]) ? '#ef4444' : 'none'} className={isFavorite(quranData[activeAyahIndex]) ? 'text-red-500' : 'text-slate-400'}/>
                                     </button>
                                     <button 
-                                        onClick={() => {
-                                            if (activeAyahIndex === idx) {
-                                                setIsPlaying(!isPlaying);
-                                            } else {
-                                                setActiveAyahIndex(idx);
-                                                setIsPlaying(true);
-                                            }
-                                        }} 
-                                        className={`p-2 rounded-full transition ${idx === activeAyahIndex && isPlaying ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                                        onClick={() => setIsPlaying(!isPlaying)} 
+                                        className={`p-2 rounded-full transition ${isPlaying ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:bg-white dark:hover:bg-slate-700'}`}
                                     >
-                                        {idx === activeAyahIndex && isPlaying ? <Pause size={18}/> : <Play size={18}/>}
+                                        {isPlaying ? <Pause size={18}/> : <Play size={18}/>}
                                     </button>
                                 </div>
                             </div>
-                        ))}
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col justify-center">
+                                <p className="text-3xl sm:text-4xl text-right w-full font-serif leading-loose text-slate-800 dark:text-slate-100" dir="rtl" style={{fontFamily: "'Amiri', serif"}}>
+                                    {quranData[activeAyahIndex].textAr}
+                                </p>
+                                <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+                                    <p className="text-sm text-slate-500 italic mb-2 opacity-80">"{quranData[activeAyahIndex].textLat}"</p>
+                                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                                        {quranData[activeAyahIndex].textTr}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Nav Hints */}
+                            <div className="absolute top-1/2 left-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronLeft size={32}/></div>
+                            <div className="absolute top-1/2 right-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronRight size={32}/></div>
+                        </div>
+                   </div>
+
+                   {/* Bottom Ayah Selector (Horizontal Scroll) */}
+                   <div className="h-16 shrink-0 relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm px-2">
+                       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide w-full px-2" ref={ayahScrollRef}>
+                           {quranData.map((_, idx) => (
+                               <button 
+                                   key={idx}
+                                   data-ayah={idx}
+                                   onClick={() => { setActiveAyahIndex(idx); setIsPlaying(false); }}
+                                   className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${idx === activeAyahIndex ? 'bg-emerald-600 text-white shadow-md scale-110' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                               >
+                                   {idx + 1}
+                               </button>
+                           ))}
+                       </div>
                    </div>
               </div>
           )}
@@ -860,96 +912,58 @@ export default function HuzurVakti() {
           {activeTab === 'hadith' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   
-                  {/* Featured Random Tinder Swipe Stack */}
-                  <div className="mb-8 relative h-[320px] w-full flex justify-center items-center">
-                      <div className="absolute top-0 left-0 w-full flex items-center gap-2 px-1 z-0">
-                          <Sparkles size={16} className="text-purple-500" />
-                          <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wide">Tevafuk Hadisler</h3>
-                      </div>
-
-                      <div 
-                        className="relative w-full h-[280px] mt-8 flex items-center justify-center touch-none"
-                        onTouchStart={onTouchStart}
-                        onTouchMove={onTouchMove}
-                        onTouchEnd={onTouchEnd}
-                        onMouseDown={onMouseDown}
-                        onMouseMove={(e) => {
-                            if (!isDragging.current) return;
-                            const diff = e.clientX - dragStartX.current;
-                            setDragX(diff);
-                        }}
-                        onMouseUp={onTouchEnd}
-                        onMouseLeave={onTouchEnd}
-                      >
-                          {/* "Refresh" Card at the bottom */}
-                          <div className="absolute w-[90%] h-full bg-slate-100 dark:bg-slate-800 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 z-0">
-                              <p className="text-slate-400 font-bold mb-4">Kartlar Bitti</p>
-                              <button onClick={shuffleHadiths} className="px-6 py-3 bg-emerald-600 text-white rounded-full font-bold shadow-lg hover:bg-emerald-700 transition flex items-center gap-2">
-                                  <RotateCw size={18}/> Yeniden Karıştır
-                              </button>
+                  {/* TEVAFUK HADISLER (Updated: Quran Style) */}
+                  <div className="mb-8">
+                      <div className="flex items-center justify-between mb-4 px-1">
+                          <div className="flex items-center gap-2">
+                              <Sparkles size={16} className="text-purple-500" />
+                              <h3 className="font-bold text-slate-500 text-sm uppercase tracking-wide">Tevafuk Hadisler</h3>
                           </div>
-
-                          {/* Hadith Cards */}
-                          {sliderHadiths.map((h, index) => {
-                              // Only render current and next few cards
-                              if (index < cardStackIndex) return null;
-                              
-                              const isTop = index === cardStackIndex;
-                              const isNext = index === cardStackIndex + 1;
-                              const isThird = index === cardStackIndex + 2;
-                              
-                              if (!isTop && !isNext && !isThird) return null;
-
-                              let style = {};
-                              
-                              if (isTop) {
-                                  style = {
-                                      transform: `translateX(${dragX}px) rotate(${dragX * 0.05}deg)`,
-                                      zIndex: 50,
-                                      transition: isDragging.current ? 'none' : 'all 0.3s ease-out'
-                                  };
-                              } else if (isNext) {
-                                  style = {
-                                      transform: `scale(${0.95 + (Math.abs(dragX) / 5000)}) translateY(10px)`,
-                                      zIndex: 40,
-                                      opacity: 1,
-                                      transition: 'all 0.3s ease-out'
-                                  };
-                              } else if (isThird) {
-                                  style = {
-                                      transform: 'scale(0.90) translateY(20px)',
-                                      zIndex: 30,
-                                      opacity: 0.5,
-                                      transition: 'all 0.3s ease-out'
-                                  };
-                              }
-
-                              return (
-                                  <div 
-                                    key={index}
-                                    style={style}
-                                    className="absolute w-[90%] h-full bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between select-none cursor-grab active:cursor-grabbing"
-                                  >
-                                      {/* Decoration */}
-                                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl pointer-events-none"></div>
-                                      
-                                      <div>
-                                          <div className="flex items-center gap-2 mb-4">
-                                              <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">{h.topic}</span>
-                                          </div>
-                                          <p className="text-xl font-serif italic leading-relaxed drop-shadow-md">"{h.text}"</p>
-                                      </div>
-                                      
-                                      <div className="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
-                                          <span className="text-xs font-bold opacity-90">{h.source}</span>
-                                          <div className="flex gap-2">
-                                               <Hand size={16} className="opacity-50 animate-pulse"/>
-                                          </div>
-                                      </div>
-                                  </div>
-                              );
-                          })}
+                          <button onClick={shuffleHadiths} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 px-2 py-1 rounded transition">
+                              <RefreshCw size={12}/> Yenile
+                          </button>
                       </div>
+
+                      {/* Hadith Card (Quran Style) */}
+                      <div className="flex flex-col items-center justify-center mb-4">
+                        <div 
+                            className="w-full h-[60vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl flex flex-col relative overflow-hidden"
+                            onTouchStart={onHadithTouchStart}
+                            onTouchEnd={onHadithTouchEnd}
+                        >
+                            {/* Top Info Bar */}
+                            <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm shrink-0">
+                                <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm uppercase tracking-wider">
+                                    {sliderHadiths[activeHadithIndex]?.topic || 'Hadis'}
+                                </span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => toggleFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'})} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition">
+                                        <Heart size={18} fill={isFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'}) ? '#ef4444' : 'none'} className={isFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'}) ? 'text-red-500' : 'text-slate-400'}/>
+                                    </button>
+                                    <button onClick={() => {navigator.clipboard.writeText(sliderHadiths[activeHadithIndex]?.text); showNotification("Kopyalandı")}} className="p-2 rounded-full text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition">
+                                        <Share2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col justify-center">
+                                <p className="text-xl sm:text-2xl text-center w-full font-serif leading-loose text-slate-800 dark:text-slate-100 italic" style={{fontFamily: "'Amiri', serif"}}>
+                                    "{sliderHadiths[activeHadithIndex]?.text}"
+                                </p>
+                                <div className="border-t border-slate-100 dark:border-slate-800 pt-6 text-center">
+                                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                        {sliderHadiths[activeHadithIndex]?.source}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Nav Hints */}
+                            <div className="absolute top-1/2 left-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronLeft size={32}/></div>
+                            <div className="absolute top-1/2 right-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronRight size={32}/></div>
+                        </div>
+                   </div>
+
                   </div>
 
                   {!selectedBook ? (
