@@ -9,7 +9,7 @@ import {
   Bell, BellOff, Volume2, Edit, Plus, Save, MapPin,
   Loader2, Grid, List, Settings, Speaker, Vibrate,
   MoreHorizontal, Smartphone, Check, Navigation,
-  Sparkles, Hand, SkipBack, SkipForward, RefreshCw
+  Sparkles, Hand, SkipBack, SkipForward, RefreshCw, ChevronDown
 } from 'lucide-react';
 import HADISLER from '../data/Hadis';
 import SURE_ADLARI from '../data/SureAdları';
@@ -35,6 +35,7 @@ export default function HuzurVakti() {
   const [favorites, setFavorites] = useState([]);
   const [showFavModal, setShowFavModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showAyahModal, setShowAyahModal] = useState(false);
 
   // Vakitler & Alarm & Sehir
   const [prayerTimes, setPrayerTimes] = useState(null);
@@ -172,6 +173,16 @@ export default function HuzurVakti() {
           }
       }
   }, [activeAyahIndex, activeTab]);
+
+  // Scroll active hadith button into view
+  useEffect(() => {
+      if (activeTab === 'hadith' && hadithScrollRef.current) {
+          const activeButton = hadithScrollRef.current.querySelector(`[data-hadith="${activeHadithIndex}"]`);
+          if (activeButton) {
+              activeButton.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+          }
+      }
+  }, [activeHadithIndex, activeTab]);
 
   // Prayer Logic
   const calculateNextPrayer = useCallback((timings) => {
@@ -855,9 +866,6 @@ export default function HuzurVakti() {
                         >
                             {/* Top Info Bar */}
                             <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm shrink-0">
-                                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                                    Ayet {quranData[activeAyahIndex].number}
-                                </span>
                                 <div className="flex gap-2">
                                     <button onClick={() => toggleFavorite(quranData[activeAyahIndex])} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition">
                                         <Heart size={18} fill={isFavorite(quranData[activeAyahIndex]) ? '#ef4444' : 'none'} className={isFavorite(quranData[activeAyahIndex]) ? 'text-red-500' : 'text-slate-400'}/>
@@ -869,18 +877,27 @@ export default function HuzurVakti() {
                                         {isPlaying ? <Pause size={18}/> : <Play size={18}/>}
                                     </button>
                                 </div>
+                                
+                                <button 
+                                    onClick={() => setShowAyahModal(true)}
+                                    className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm flex items-center gap-1 active:scale-95 transition"
+                                >
+                                    Ayet {quranData[activeAyahIndex].number} <ChevronDown size={14}/>
+                                </button>
                             </div>
 
                             {/* Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col justify-center">
-                                <p className="text-3xl sm:text-4xl text-right w-full font-serif leading-loose text-slate-800 dark:text-slate-100" dir="rtl" style={{fontFamily: "'Amiri', serif"}}>
-                                    {quranData[activeAyahIndex].textAr}
-                                </p>
-                                <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
-                                    <p className="text-sm text-slate-500 italic mb-2 opacity-80">"{quranData[activeAyahIndex].textLat}"</p>
-                                    <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                                        {quranData[activeAyahIndex].textTr}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="min-h-full flex flex-col justify-center space-y-6">
+                                    <p className="text-3xl sm:text-4xl text-right w-full font-serif leading-loose text-slate-800 dark:text-slate-100" dir="rtl" style={{fontFamily: "'Amiri', serif"}}>
+                                        {quranData[activeAyahIndex].textAr}
                                     </p>
+                                    <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+                                        <p className="text-sm text-slate-500 italic mb-2 opacity-80">"{quranData[activeAyahIndex].textLat}"</p>
+                                        <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                                            {quranData[activeAyahIndex].textTr}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -888,22 +905,6 @@ export default function HuzurVakti() {
                             <div className="absolute top-1/2 left-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronLeft size={32}/></div>
                             <div className="absolute top-1/2 right-2 -translate-y-1/2 opacity-20 pointer-events-none hidden sm:block"><ChevronRight size={32}/></div>
                         </div>
-                   </div>
-
-                   {/* Bottom Ayah Selector (Horizontal Scroll) */}
-                   <div className="h-16 shrink-0 relative flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm px-2">
-                       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide w-full px-2" ref={ayahScrollRef}>
-                           {quranData.map((_, idx) => (
-                               <button 
-                                   key={idx}
-                                   data-ayah={idx}
-                                   onClick={() => { setActiveAyahIndex(idx); setIsPlaying(false); }}
-                                   className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${idx === activeAyahIndex ? 'bg-emerald-600 text-white shadow-md scale-110' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                               >
-                                   {idx + 1}
-                               </button>
-                           ))}
-                       </div>
                    </div>
               </div>
           )}
@@ -933,9 +934,6 @@ export default function HuzurVakti() {
                         >
                             {/* Top Info Bar */}
                             <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm shrink-0">
-                                <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm uppercase tracking-wider">
-                                    {sliderHadiths[activeHadithIndex]?.topic || 'Hadis'}
-                                </span>
                                 <div className="flex gap-2">
                                     <button onClick={() => toggleFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'})} className="p-2 rounded-full hover:bg-white dark:hover:bg-slate-700 transition">
                                         <Heart size={18} fill={isFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'}) ? '#ef4444' : 'none'} className={isFavorite({...sliderHadiths[activeHadithIndex], type:'hadith'}) ? 'text-red-500' : 'text-slate-400'}/>
@@ -944,17 +942,22 @@ export default function HuzurVakti() {
                                         <Share2 size={18} />
                                     </button>
                                 </div>
+                                <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-bold shadow-sm uppercase tracking-wider">
+                                    {sliderHadiths[activeHadithIndex]?.topic || 'Hadis'}
+                                </span>
                             </div>
 
                             {/* Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col justify-center">
-                                <p className="text-xl sm:text-2xl text-center w-full font-serif leading-loose text-slate-800 dark:text-slate-100 italic" style={{fontFamily: "'Amiri', serif"}}>
-                                    "{sliderHadiths[activeHadithIndex]?.text}"
-                                </p>
-                                <div className="border-t border-slate-100 dark:border-slate-800 pt-6 text-center">
-                                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                        {sliderHadiths[activeHadithIndex]?.source}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="min-h-full flex flex-col justify-center space-y-6">
+                                    <p className="text-xl sm:text-2xl text-center w-full font-serif leading-loose text-slate-800 dark:text-slate-100 italic" style={{fontFamily: "'Amiri', serif"}}>
+                                        "{sliderHadiths[activeHadithIndex]?.text}"
                                     </p>
+                                    <div className="border-t border-slate-100 dark:border-slate-800 pt-6 text-center">
+                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                            {sliderHadiths[activeHadithIndex]?.source}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1037,18 +1040,31 @@ export default function HuzurVakti() {
           </div>
       )}
 
-      {/* Alarm Modal */}
-      {isAlarmPlaying && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
-                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                      <Volume2 size={40} className="text-emerald-600 dark:text-emerald-400" />
+      {/* Ayah Selection Modal */}
+      {showAyahModal && quranData.length > 0 && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={(e) => {if(e.target === e.currentTarget) setShowAyahModal(false)}}>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-xs max-h-[70vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+                  <div className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800">
+                      <h3 className="font-bold text-lg">Ayet Seç</h3>
+                      <button onClick={() => setShowAyahModal(false)}><X size={20}/></button>
                   </div>
-                  <h2 className="text-3xl font-bold mb-2 dark:text-white">Vakit Geldi!</h2>
-                  <p className="text-slate-500 mb-8">Namaz vakti girdi, Allah kabul etsin.</p>
-                  <button onClick={stopAlarm} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-500/30">
-                      Alarmı Durdur
-                  </button>
+                  <div className="flex-1 overflow-y-auto p-2">
+                      <div className="grid grid-cols-5 gap-2">
+                          {quranData.map((_, idx) => (
+                              <button 
+                                  key={idx}
+                                  onClick={() => {
+                                      setActiveAyahIndex(idx);
+                                      setIsPlaying(false);
+                                      setShowAyahModal(false);
+                                  }}
+                                  className={`aspect-square rounded-lg flex items-center justify-center font-bold text-sm transition ${idx === activeAyahIndex ? 'bg-emerald-600 text-white' : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                              >
+                                  {idx + 1}
+                              </button>
+                          ))}
+                      </div>
+                  </div>
               </div>
           </div>
       )}
